@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { Template } from '@walletpass/pass-js';
 import { config } from '../config.js';
 import { loadSigningMaterial } from './certs.js';
-import { pct, int, periodLabel, updatedLabel, kpiStatus, withGlyph, storeLine } from '../format.js';
+import {
+  pct, int, weekLabel, monthLabel, updatedLabel, rateOf, kpiStatus, withGlyph, delta, storeLine,
+} from '../format.js';
 
 const ASSETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../assets');
 
@@ -45,61 +47,85 @@ async function getTemplate(organizationName) {
  * @returns Buffer   signed .pkpass
  */
 export async function buildPass(scorecard) {
-  const { rmo, period, settings, totals, stores } = scorecard;
+  const { rmo, settings, week, prevWeek, month, stores, storeMonths } = scorecard;
   const template = await getTemplate(settings.organization_name);
-  const status = kpiStatus(totals, settings);
+  const status = kpiStatus(week, settings);
 
   const pass = template.createPass({
     serialNumber: rmo.serial_number,
-    description: `Lithia RMO Scorecard · ${rmo.region_name}`,
+    description: `Lithia RMO Scorecard · ${rmo.name}`,
     webServiceURL: `${config.publicBaseUrl}/apple`,
     authenticationToken: rmo.auth_token,
   });
 
-  // Header (top right, next to logo)
-  pass.headerFields.add({ key: 'period', label: 'PERIOD', value: periodLabel(period) });
+  const book = rateOf(week, 'book_rate', settings);
+  const contain = rateOf(week, 'containment_rate', settings);
+  const transfer = rateOf(week, 'transfer_rate', settings);
+  const prevBook = rateOf(prevWeek, 'book_rate', settings);
+  const mtdBook = rateOf(month, 'book_rate', settings);
 
-  // Primary: the one number Alpha Drive is measured on
+  // Header (top right, next to logo): the reporting week
+  pass.headerFields.add({ key: 'week', label: 'WEEK', value: week ? weekLabel(week.period_start, week.period_end) : '—' });
+
+  // Primary: the number Alpha Drive is measured on
+  const wow = delta(book, prevBook);
   pass.primaryFields.add({
-    key: 'booking',
-    label: `BOOKING RATE · TARGET ${pct(settings.booking_rate_target, 0)}`,
-    value: totals ? withGlyph(pct(totals.booking_rate), status.booking) : 'No data yet',
-    ...(config.notifyOnChange ? { changeMessage: 'Booking rate is now %@' } : {}),
+    key: 'book',
+    label: `BOOK RATE · TARGET ${pct(settings.booking_rate_target, 0)}${wow ? ` · ${wow} WoW` : ''}`,
+    value: week ? withGlyph(pct(book), status.book) : 'No data yet',
+    ...(config.notifyOnChange ? { changeMessage: 'Book rate is now %@' } : {}),
   });
 
   // Secondary: the other four KPIs
-  pass.secondaryFields.add({ key: 'containment', label: 'CONTAINMENT', value: totals ? pct(totals.containment_rate) : '—' });
+  pass.secondaryFields.add({ key: 'contain', label: 'CONTAINMENT', value: week ? pct(contain) : '—' });
   pass.secondaryFields.add({
     key: 'transfer',
     label: `TRANSFER · MAX ${pct(settings.transfer_rate_max, 0)}`,
-    value: totals ? withGlyph(pct(totals.transfer_rate), status.transfer) : '—',
+    value: week ? withGlyph(pct(transfer), status.transfer) : '—',
   });
-  pass.secondaryFields.add({ key: 'calls', label: 'TOTAL CALLS', value: totals ? int(totals.calls_total) : '—' });
-  pass.secondaryFields.add({ key: 'customers', label: 'CUSTOMERS SERVED', value: totals ? int(totals.customers_served) : '—' });
+  pass.secondaryFields.add({ key: 'calls', label: 'TOTAL CALLS', value: week ? int(week.calls) : '—' });
+  pass.secondaryFields.add({ key: 'customers', label: 'CUSTOMERS', value: week ? int(week.customers) : '—' });
 
-  // Auxiliary: who and when
+  // Auxiliary: who, how many, MTD, when
   pass.auxiliaryFields.add({ key: 'rmo', label: 'RMO', value: rmo.name });
-  pass.auxiliaryFields.add({ key: 'region', label: 'REGION', value: rmo.region_name });
-  pass.auxiliaryFields.add({ key: 'stores', label: 'STORES', value: String(totals?.store_count ?? stores.length) });
-  pass.auxiliaryFields.add({ key: 'updated', label: 'UPDATED', value: updatedLabel(totals?.updated_at || rmo.pass_updated_at) });
+  pass.auxiliaryFields.add({ key: 'stores', label: 'STORES', value: String(week?.store_count ?? stores.length) });
+  pass.auxiliaryFields.add({ key: 'mtd', label: month ? `${monthLabel(month.month).toUpperCase()} MTD BOOK` : 'MTD BOOK', value: month ? pct(mtdBook) : '—' });
+  pass.auxiliaryFields.add({ key: 'updated', label: 'UPDATED', value: updatedLabel(week?.updated_at || rmo.pass_updated_at) });
 
-  // Back: store-by-store breakdown
-  pass.backFields.add({ key: 'about', label: 'ABOUT THIS CARD', value:
-    `Live performance for ${rmo.region_name} stores handled by Alpha Drive AI. ` +
-    `Booking rate counts appointments on all inbound calls. Containment counts appointments on scheduling calls only. ` +
-    `✓ on target · ▲ needs attention. Updates automatically.` });
+  // Back: month-to-date, then store by store
+  if (month) {
+    pass.backFields.add({
+      key: 'mtd_detail',
+      label: `${monthLabel(month.month).toUpperCase()} MONTH TO DATE · ${month.weeks} WK`,
+      value: [
+        `Book ${pct(mtdBook)}`,
+        `Contain ${pct(rateOf(month, 'containment_rate', settings), 0)}`,
+        `Transfer ${pct(rateOf(month, 'transfer_rate', settings), 0)}`,
+        `${int(month.calls)} calls`,
+        `${int(month.customers)} customers`,
+        `${int(month.appointments)} appointments`,
+      ].join(' · '),
+    });
+  }
 
+  const mtdByStore = new Map(storeMonths.map((m) => [m.store_id, m]));
   stores.forEach((s, i) => {
+    const m = mtdByStore.get(s.store_id);
+    const flag = s.status === 'canceled' ? ' · CANCELED' : '';
     pass.backFields.add({
       key: `store_${i}`,
-      label: s.dealer_code ? `${s.store_name.toUpperCase()} · ${s.dealer_code}` : s.store_name.toUpperCase(),
-      value: storeLine(s),
+      label: `${s.store_name.toUpperCase()}${s.state ? ` · ${s.state.toUpperCase()}` : ''}${flag}`,
+      value: `This week: ${storeLine(s)}` + (m ? `\nMTD: Book ${pct(m.book_rate)} · ${int(m.calls)} calls · ${int(m.appointments)} appts` : ''),
     });
   });
-  if (!stores.length) pass.backFields.add({ key: 'nostores', label: 'STORES', value: 'No store data for this period yet.' });
+  if (!stores.length) pass.backFields.add({ key: 'nostores', label: 'STORES', value: 'No store data yet.' });
 
+  pass.backFields.add({ key: 'about', label: 'ABOUT THIS CARD', value:
+    `Weekly performance of your stores handled by Alpha Drive AI. Book rate = appointments ÷ total calls. ` +
+    `Containment = calls resolved by AI without a transfer. ✓ on target · ▲ needs attention. ` +
+    `Updates automatically when the weekly report is posted.` });
   pass.backFields.add({ key: 'targets', label: 'TARGETS', value:
-    `Booking rate above ${pct(settings.booking_rate_target, 0)} · Transfer rate below ${pct(settings.transfer_rate_max, 0)}` });
+    `Book rate above ${pct(settings.booking_rate_target, 0)} · Transfer rate below ${pct(settings.transfer_rate_max, 0)}` });
   pass.backFields.add({ key: 'support', label: 'ALPHA DRIVE AI CLIENT SUPPORT', value: '239-221-5236 · alphadriveai.com' });
 
   return pass.asBuffer();
