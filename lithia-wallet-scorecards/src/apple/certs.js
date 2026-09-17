@@ -33,6 +33,16 @@ export async function loadSigningMaterial() {
   }
 
   if (p12Path) {
+    // Accept a base64 text file at the p12 path too (binary uploads get mangled by some dashboards)
+    const raw = await readFile(p12Path);
+    if (raw[0] !== 0x30 && /^[A-Za-z0-9+/=\r\n\s]+$/.test(raw.toString('latin1').slice(0, 4000))) {
+      const decoded = Buffer.from(raw.toString('ascii').replace(/\s+/g, ''), 'base64');
+      p12Path = path.join(os.tmpdir(), 'lithia-scorecard.decoded.p12');
+      await writeFile(p12Path, decoded, { mode: 0o600 });
+      console.log(`p12 file was base64 text; decoded ${decoded.length} bytes (first byte 0x${decoded[0]?.toString(16)})`);
+    } else {
+      console.log(`p12 file: ${raw.length} bytes (first byte 0x${raw[0]?.toString(16)})`);
+    }
     let certPem, keyPem;
     try {
       ({ certPem, keyPem } = await viaOpenssl(p12Path, a.p12Password));
@@ -53,7 +63,7 @@ export async function loadSigningMaterial() {
     return cached;
   }
 
-  throw new Error('Set APPLE_PASS_P12_BASE64 (recommended), APPLE_PASS_P12_PATH, or APPLE_PASS_CERT_PEM_PATH + APPLE_PASS_KEY_PEM_PATH');
+  throw new Error('Set APPLE_PASS_P12_PATH (recommended) or APPLE_PASS_CERT_PEM_PATH + APPLE_PASS_KEY_PEM_PATH');
 }
 
 async function viaOpenssl(p12Path, password) {
