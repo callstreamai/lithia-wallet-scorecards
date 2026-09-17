@@ -1,4 +1,6 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import forge from 'node-forge';
@@ -21,13 +23,22 @@ export async function loadSigningMaterial() {
   try { const { stdout } = await run('openssl', ['version']); console.log('openssl:', stdout.trim()); } catch {}
   const a = config.apple;
 
-  if (a.p12Path) {
+  // Base64 env var wins: Render secret files can mangle binary uploads.
+  let p12Path = a.p12Path;
+  const p12Base64 = process.env.APPLE_PASS_P12_BASE64;
+  if (p12Base64) {
+    p12Path = path.join(os.tmpdir(), 'lithia-scorecard.p12');
+    await writeFile(p12Path, Buffer.from(p12Base64.replace(/\s+/g, ''), 'base64'), { mode: 0o600 });
+    console.log('p12 decoded from APPLE_PASS_P12_BASE64');
+  }
+
+  if (p12Path) {
     let certPem, keyPem;
     try {
-      ({ certPem, keyPem } = await viaOpenssl(a.p12Path, a.p12Password));
+      ({ certPem, keyPem } = await viaOpenssl(p12Path, a.p12Password));
     } catch (e) {
       console.warn('openssl p12 read failed, trying node-forge');
-      ({ certPem, keyPem } = await viaForge(a.p12Path, a.p12Password));
+      ({ certPem, keyPem } = await viaForge(p12Path, a.p12Password));
     }
     cached = { certPem, keyPem, keyPassword: undefined };
     return cached;
@@ -42,7 +53,7 @@ export async function loadSigningMaterial() {
     return cached;
   }
 
-  throw new Error('Set APPLE_PASS_P12_PATH (recommended) or APPLE_PASS_CERT_PEM_PATH + APPLE_PASS_KEY_PEM_PATH');
+  throw new Error('Set APPLE_PASS_P12_BASE64 (recommended), APPLE_PASS_P12_PATH, or APPLE_PASS_CERT_PEM_PATH + APPLE_PASS_KEY_PEM_PATH');
 }
 
 async function viaOpenssl(p12Path, password) {
