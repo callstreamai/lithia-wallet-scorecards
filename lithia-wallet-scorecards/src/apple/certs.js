@@ -5,6 +5,7 @@ import forge from 'node-forge';
 import { config } from '../config.js';
 
 const run = promisify(execFile);
+const firstLine = (t) => String(t || '').split('\n').find((l) => l.trim()) || '';
 const OID_UID = '0.9.2342.19200300.100.1.1'; // Apple puts the Pass Type ID here
 const uidOf = (cert) => cert.subject.attributes.find((a) => a.type === OID_UID)?.value;
 
@@ -17,6 +18,7 @@ let cached;
  */
 export async function loadSigningMaterial() {
   if (cached) return cached;
+  try { const { stdout } = await run('openssl', ['version']); console.log('openssl:', stdout.trim()); } catch {}
   const a = config.apple;
 
   if (a.p12Path) {
@@ -24,7 +26,7 @@ export async function loadSigningMaterial() {
     try {
       ({ certPem, keyPem } = await viaOpenssl(a.p12Path, a.p12Password));
     } catch (e) {
-      console.warn('openssl p12 read failed, trying node-forge:', e.message.split('\n')[0]);
+      console.warn('openssl p12 read failed, trying node-forge');
       ({ certPem, keyPem } = await viaForge(a.p12Path, a.p12Password));
     }
     cached = { certPem, keyPem, keyPassword: undefined };
@@ -53,7 +55,12 @@ async function viaOpenssl(p12Path, password) {
     return { certs, key };
   };
   let out;
-  try { out = await attempt([]); } catch (e) { out = await attempt(['-legacy']); }
+  try { out = await attempt([]); }
+  catch (e1) {
+    console.warn('openssl (default):', firstLine(e1.stderr) || e1.message);
+    try { out = await attempt(['-legacy']); }
+    catch (e2) { console.warn('openssl (-legacy):', firstLine(e2.stderr) || e2.message); throw e2; }
+  }
 
   const certPems = out.certs.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g) || [];
   const keyPem = (out.key.match(/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC )?PRIVATE KEY-----/) || [])[0];
