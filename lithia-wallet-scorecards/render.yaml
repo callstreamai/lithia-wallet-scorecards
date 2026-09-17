@@ -4,12 +4,13 @@ services:
     runtime: node
     region: virginia
     plan: starter
-    buildCommand: npm ci
+    rootDir: lithia-wallet-scorecards
+    buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
-        value: "20"
+        value: "22"
       - key: SUPABASE_URL
         value: https://ropvfkjkpcqiwgqfmzfz.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -29,8 +30,8 @@ services:
       - key: APPLE_APNS_KEY_ID
         value: 3BH6593MS4
       - key: WEBHOOK_SECRET
-        generateValue: true
+        sync: false
       - key: ADMIN_API_KEY
-        generateValue: true
+        sync: false
       - key: NOTIFY_ON_CHANGE
         value: "false"

@@ -4,12 +4,14 @@ Live Apple Wallet (and later Google Wallet + PDF) scorecards for Lithia Regional
 
 ## How it works
 
-1. The team enters monthly numbers per store in Supabase (admin app, Phase 2).
-2. A database trigger bumps `rmos.pass_updated_at`; a database webhook calls `POST /hooks/scorecard-updated` on this service.
+1. Each week the team uploads the "Weekly Account Performance Report" .xlsx in the admin portal (`POST /admin/import`). The parser reads every sheet titled "Week of ...", matches dealers to stores (by name or alias), and upserts one `store_weeks` row per dealer per week. Dealers with no store match are created as `pending` and listed as unmatched for the team to assign.
+2. A database trigger bumps `rmos.pass_updated_at`; the import (or a Supabase webhook for manual edits) schedules a push per affected RMO.
 3. The service pushes an empty APNs notification to every iPhone registered for that RMO's pass.
 4. Each iPhone calls back `GET /apple/v1/passes/...`, receives a freshly signed `.pkpass`, and the card updates.
 
-Region totals are call-weighted rollups of the store rows (see `v_rmo_scorecards`), never averages of percentages.
+The card shows the latest week on the front (book rate with WoW change, containment, transfer, calls, customers, MTD book rate) and month-to-date plus a per-store breakdown on the back.
+
+Rates: book rate = appointments / calls and transfer rate = transfers / calls are derived from counts; containment comes from the report. RMO rollups are available both as simple averages of store rates (matches the Excel subtotals) and call-weighted; `settings.rate_aggregation` picks which the cards display.
 
 ## Endpoints
 
@@ -20,15 +22,20 @@ Region totals are call-weighted rollups of the store rows (see `v_rmo_scorecards
 | `GET /apple/add/:slug.pkpass` | Direct pass download |
 | `/apple/v1/...` | Apple PassKit web service (registration, updates, pass fetch, log) |
 | `POST /hooks/scorecard-updated` | Supabase database webhook (header `x-webhook-secret`) |
+| `POST /admin/import?weeks=latest\|all` | Upload the weekly .xlsx (raw body; headers `x-admin-key`, `x-filename`, `x-user`) |
+| `POST /admin/import/preview` | Parse without writing; returns the weeks found |
 | `POST /admin/rmos/:id/push` | Force a push for one RMO (header `x-admin-key`) |
+| `POST /admin/push-all` | Force a push for every active RMO |
 
 ## Deploy on Render
+
+Root Directory: `lithia-wallet-scorecards`. Node 22 (`NODE_VERSION=22`).
 
 Secret Files (Render dashboard, Environment tab):
 - `lithia-scorecard.p12` (Pass Type ID certificate exported from Keychain Access)
 - `AuthKey_3BH6593MS4.p8` (APNs auth key)
 
-Environment variables: see `.env.example` and `render.yaml`. `SUPABASE_SERVICE_ROLE_KEY` and `APPLE_PASS_P12_PASSWORD` are entered by hand.
+Environment variables: see `.env.example` and `render.yaml`. `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_PASS_P12_PASSWORD`, `WEBHOOK_SECRET` and `ADMIN_API_KEY` are entered by hand.
 
 ## Local preview (no database needed)
 

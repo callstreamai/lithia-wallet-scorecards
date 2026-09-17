@@ -1,11 +1,13 @@
 {
   "name": "lithia-wallet-scorecards",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Alpha Drive AI live Wallet scorecards for Lithia RMOs (Apple Wallet service, Google Wallet, PDF)",
   "main": "src/server.js",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
@@ -17,6 +19,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
-    "node-forge": "^1.3.1"
+    "node-forge": "^1.3.1",
+    "xlsx": "^0.18.5"
   }
 }
