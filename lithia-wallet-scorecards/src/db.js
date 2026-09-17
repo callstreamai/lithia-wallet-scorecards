@@ -5,23 +5,6 @@ export const supabase = createClient(config.supabase.url, config.supabase.servic
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-function firstOfCurrentMonth() {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
-}
-
-/** Latest period that has data for this RMO, falling back to the current month. */
-async function latestPeriodForRmo(rmoId) {
-  const { data } = await supabase
-    .from('v_rmo_scorecards')
-    .select('period')
-    .eq('rmo_id', rmoId)
-    .order('period', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data?.period || firstOfCurrentMonth();
-}
-
 export async function getSettings() {
   const { data, error } = await supabase.from('settings').select('*').eq('id', 1).single();
   if (error) throw error;
@@ -49,28 +32,43 @@ export async function getRmoById(id) {
 export async function getRmoForStore(storeId) {
   const { data, error } = await supabase.from('stores').select('rmo_id').eq('id', storeId).maybeSingle();
   if (error) throw error;
-  return data ? getRmoById(data.rmo_id) : null;
+  return data?.rmo_id ? getRmoById(data.rmo_id) : null;
+}
+
+export async function listActiveRmos() {
+  const { data, error } = await supabase.from('rmos').select('*').eq('active', true).order('name');
+  if (error) throw error;
+  return data;
 }
 
 /**
- * Everything needed to render one RMO's scorecard (any platform):
- * region rollup + per-store rows + KPI targets.
+ * Everything needed to render one RMO's scorecard on any surface:
+ * latest week, prior week, month-to-date, per-store rows for both, and KPI targets.
  */
-export async function getScorecard(rmo, period) {
-  const p = period || (await latestPeriodForRmo(rmo.id));
-  const [settings, rollupRes, storesRes] = await Promise.all([
-    getSettings(),
-    supabase.from('v_rmo_scorecards').select('*').eq('rmo_id', rmo.id).eq('period', p).maybeSingle(),
-    supabase.from('v_store_scorecards').select('*').eq('rmo_id', rmo.id).eq('period', p).order('sort_order'),
+export async function getScorecard(rmo, periodStart) {
+  const settings = await getSettings();
+
+  let weeksQ = supabase.from('v_rmo_weeks').select('*').eq('rmo_id', rmo.id).order('period_start', { ascending: false }).limit(2);
+  if (periodStart) weeksQ = weeksQ.lte('period_start', periodStart);
+  const { data: weeks, error: eW } = await weeksQ;
+  if (eW) throw eW;
+  const week = weeks?.[0] || null;
+  const prevWeek = weeks?.[1] || null;
+  if (!week) return { rmo, settings, week: null, prevWeek: null, month: null, stores: [], storeMonths: [] };
+
+  const monthKey = week.period_start.slice(0, 7) + '-01';
+  const [monthRes, storesRes, storeMonthsRes] = await Promise.all([
+    supabase.from('v_rmo_months').select('*').eq('rmo_id', rmo.id).eq('month', monthKey).maybeSingle(),
+    supabase.from('v_store_weeks').select('*').eq('rmo_id', rmo.id).eq('period_start', week.period_start).order('calls', { ascending: false }),
+    supabase.from('v_store_months').select('*').eq('rmo_id', rmo.id).eq('month', monthKey),
   ]);
-  if (rollupRes.error) throw rollupRes.error;
-  if (storesRes.error) throw storesRes.error;
+  for (const r of [monthRes, storesRes, storeMonthsRes]) if (r.error) throw r.error;
+
   return {
-    rmo,
-    period: p,
-    settings,
-    totals: rollupRes.data, // null when no data yet for the period
+    rmo, settings, week, prevWeek,
+    month: monthRes.data,
     stores: storesRes.data || [],
+    storeMonths: storeMonthsRes.data || [],
   };
 }
 
