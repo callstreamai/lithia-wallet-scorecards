@@ -29,13 +29,11 @@ Rates: book rate = appointments / calls and transfer rate = transfers / calls ar
 
 ## Deploy on Render
 
-Root Directory: `lithia-wallet-scorecards`. Node 22 (`NODE_VERSION=22`).
-
 Secret Files (Render dashboard, Environment tab):
 - `lithia-scorecard.p12` (Pass Type ID certificate exported from Keychain Access)
 - `AuthKey_3BH6593MS4.p8` (APNs auth key)
 
-Environment variables: see `.env.example` and `render.yaml`. `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_PASS_P12_PASSWORD`, `WEBHOOK_SECRET` and `ADMIN_API_KEY` are entered by hand.
+Environment variables: see `.env.example` and `render.yaml`. `SUPABASE_SERVICE_ROLE_KEY` and `APPLE_PASS_P12_PASSWORD` are entered by hand.
 
 ## Local preview (no database needed)
 

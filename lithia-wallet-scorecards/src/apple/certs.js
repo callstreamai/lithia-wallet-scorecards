@@ -25,10 +25,9 @@ export async function loadSigningMaterial() {
 
   // Base64 env var wins: Render secret files can mangle binary uploads.
   let p12Path = a.p12Path;
-  const p12Base64 = process.env.APPLE_PASS_P12_BASE64;
-  if (p12Base64) {
+  if (a.p12Base64) {
     p12Path = path.join(os.tmpdir(), 'lithia-scorecard.p12');
-    await writeFile(p12Path, Buffer.from(p12Base64.replace(/\s+/g, ''), 'base64'), { mode: 0o600 });
+    await writeFile(p12Path, Buffer.from(a.p12Base64.replace(/\s+/g, ''), 'base64'), { mode: 0o600 });
     console.log('p12 decoded from APPLE_PASS_P12_BASE64');
   }
 

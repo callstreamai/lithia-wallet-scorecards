@@ -19,6 +19,7 @@ export const config = {
     teamId: required('APPLE_TEAM_ID'),
     passTypeId: required('APPLE_PASS_TYPE_ID'),
     p12Path: process.env.APPLE_PASS_P12_PATH,
+    p12Base64: process.env.APPLE_PASS_P12_BASE64, // preferred on Render: binary-safe
     p12Password: process.env.APPLE_PASS_P12_PASSWORD || '',
     // Alternative to p12: PEM files
     certPemPath: process.env.APPLE_PASS_CERT_PEM_PATH,

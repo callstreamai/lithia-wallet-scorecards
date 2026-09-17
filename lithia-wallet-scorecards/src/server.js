@@ -3,13 +3,18 @@ import { config } from './config.js';
 import * as db from './db.js';
 import { appleRouter, pushRmo } from './apple/routes.js';
 import { describeCertificate } from './apple/certs.js';
-import { landingPage } from './landing.js';
+import { landingPage, lockedPage } from './landing.js';
+import { rmoAccess, handleAccessRequest, magicLink } from './auth.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseReport } from './import-report.js';
 import { applyReport } from './import-apply.js';
 
 const app = express();
 app.set('trust proxy', true);
 app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false }));
+app.use('/assets', express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets'), { maxAge: '7d', immutable: true }));
 
 // Browser admin portal (Netlify) calls the /admin endpoints cross-origin
 app.use('/admin', (req, res, next) => {
@@ -41,12 +46,22 @@ app.get('/health', async (_req, res) => {
 // ---- Apple Wallet (PassKit web service lives under /apple) ----
 app.use('/apple', appleRouter);
 
-// ---- RMO landing page ----
-app.get('/w/:slug', async (req, res, next) => {
+// ---- RMO landing page (magic-link protected) ----
+app.get('/w/:slug', rmoAccess({ mode: 'page' }), async (req, res, next) => {
   try {
-    const rmo = await db.getRmoBySlug(req.params.slug);
-    if (!rmo) return res.status(404).send('Scorecard not found');
-    res.type('html').send(landingPage(await db.getScorecard(rmo, req.query.week)));
+    if (res.locals.locked) return res.status(200).type('html').send(lockedPage(req.rmo, { sent: req.query.sent === '1' }));
+    res.type('html').send(landingPage(await db.getScorecard(req.rmo, req.query.week)));
+  } catch (e) { next(e); }
+});
+
+// Locked page form: email -> send personal link (if the address is on file)
+app.post('/auth/request', async (req, res, next) => {
+  try {
+    const { slug, email } = req.body || {};
+    if (!slug) return res.sendStatus(400);
+    const result = await handleAccessRequest(slug, email);
+    if ((req.get('accept') || '').includes('application/json') || req.is('application/json')) return res.json(result);
+    res.redirect(302, `/w/${encodeURIComponent(slug)}?sent=1`);
   } catch (e) { next(e); }
 });
 
@@ -102,6 +117,15 @@ app.post('/admin/import/preview', express.raw({ type: () => true, limit: '25mb' 
       weeks: parsed.weeks.map((w) => ({ start: w.start, end: w.end, sheet: w.sheet, dealers: w.rows.length })),
       hasMapping: !!parsed.mapping,
     });
+  } catch (e) { next(e); }
+});
+
+// Personal access link for one RMO (portal shows a Copy button)
+app.get('/admin/rmos/:id/link', async (req, res, next) => {
+  try {
+    const rmo = await db.getRmoById(req.params.id);
+    if (!rmo) return res.sendStatus(404);
+    res.json({ ok: true, url: magicLink(rmo) });
   } catch (e) { next(e); }
 });
 

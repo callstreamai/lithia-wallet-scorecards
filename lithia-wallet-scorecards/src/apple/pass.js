@@ -4,16 +4,17 @@ import { Template } from '@walletpass/pass-js';
 import { config } from '../config.js';
 import { loadSigningMaterial } from './certs.js';
 import {
-  pct, int, weekLabel, monthLabel, updatedLabel, rateOf, kpiStatus, withGlyph, delta, storeLine,
+  pct, int, weekLabel, monthLabel, shortDate, rateOf, kpiStatus, withGlyph, delta, storeLine,
 } from '../format.js';
 
 const ASSETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../assets');
 
 // Alpha Drive AI palette: dark card, white values, muted labels
+// Alpha Drive AI brand: Ink Black surface, Paper text, Smoke labels (brand.alphadriveai.com)
 const COLORS = {
-  background: 'rgb(17, 17, 17)',
+  background: 'rgb(10, 10, 12)',
   foreground: 'rgb(255, 255, 255)',
-  label: 'rgb(163, 163, 163)',
+  label: 'rgb(158, 158, 162)',
 };
 
 let templatePromise;
@@ -26,7 +27,6 @@ async function getTemplate(organizationName) {
         teamIdentifier: config.apple.teamId,
         organizationName,
         description: 'Lithia RMO Scorecard',
-        logoText: 'Alpha Drive AI',
         backgroundColor: COLORS.background,
         foregroundColor: COLORS.foreground,
         labelColor: COLORS.label,
@@ -76,21 +76,20 @@ export async function buildPass(scorecard) {
     ...(config.notifyOnChange ? { changeMessage: 'Book rate is now %@' } : {}),
   });
 
-  // Secondary: the other four KPIs
+  // Secondary: three KPIs so values never truncate
   pass.secondaryFields.add({ key: 'contain', label: 'CONTAINMENT', value: week ? pct(contain) : '—' });
   pass.secondaryFields.add({
     key: 'transfer',
     label: `TRANSFER · MAX ${pct(settings.transfer_rate_max, 0)}`,
     value: week ? withGlyph(pct(transfer), status.transfer) : '—',
   });
-  pass.secondaryFields.add({ key: 'calls', label: 'TOTAL CALLS', value: week ? int(week.calls) : '—' });
-  pass.secondaryFields.add({ key: 'customers', label: 'CUSTOMERS', value: week ? int(week.customers) : '—' });
+  pass.secondaryFields.add({ key: 'calls', label: 'CALLS', value: week ? int(week.calls) : '—' });
 
-  // Auxiliary: who, how many, MTD, when
+  // Auxiliary: who, customers, MTD, when
   pass.auxiliaryFields.add({ key: 'rmo', label: 'RMO', value: rmo.name });
-  pass.auxiliaryFields.add({ key: 'stores', label: 'STORES', value: String(week?.store_count ?? stores.length) });
-  pass.auxiliaryFields.add({ key: 'mtd', label: month ? `${monthLabel(month.month).toUpperCase()} MTD BOOK` : 'MTD BOOK', value: month ? pct(mtdBook) : '—' });
-  pass.auxiliaryFields.add({ key: 'updated', label: 'UPDATED', value: updatedLabel(week?.updated_at || rmo.pass_updated_at) });
+  pass.auxiliaryFields.add({ key: 'customers', label: 'CUSTOMERS', value: week ? int(week.customers) : '—' });
+  pass.auxiliaryFields.add({ key: 'mtd', label: 'MTD BOOK', value: month ? pct(mtdBook) : '—' });
+  pass.auxiliaryFields.add({ key: 'updated', label: 'UPDATED', value: shortDate(week?.updated_at || rmo.pass_updated_at) });
 
   // Back: month-to-date, then store by store
   if (month) {
@@ -107,6 +106,8 @@ export async function buildPass(scorecard) {
       ].join(' · '),
     });
   }
+
+  pass.backFields.add({ key: 'stores_hdr', label: 'STORES', value: `${stores.length} store${stores.length === 1 ? '' : 's'} · ${rmo.region_name || ''}`.trim() });
 
   const mtdByStore = new Map(storeMonths.map((m) => [m.store_id, m]));
   stores.forEach((s, i) => {

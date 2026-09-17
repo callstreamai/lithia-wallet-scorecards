@@ -9,8 +9,14 @@ let token = { value: null, issued: 0 };
 let session;
 
 async function bearer() {
-  if (!config.apple.apnsKeyPath || !config.apple.apnsKeyId) throw new Error('APNs key not configured');
-  keyPem ??= await readFile(config.apple.apnsKeyPath, 'utf8');
+  if (!config.apple.apnsKeyId) throw new Error('APPLE_APNS_KEY_ID not configured');
+  // Key text may come from an env var (APPLE_APNS_KEY, PEM contents) or a file path
+  if (!keyPem) {
+    const fromEnv = process.env.APPLE_APNS_KEY;
+    if (fromEnv && fromEnv.trim()) keyPem = fromEnv.replace(/\\n/g, '\n').trim() + '\n';
+    else if (config.apple.apnsKeyPath) keyPem = await readFile(config.apple.apnsKeyPath, 'utf8');
+    else throw new Error('Set APPLE_APNS_KEY (PEM text) or APPLE_APNS_KEY_PATH');
+  }
   // Apple wants tokens refreshed between 20 and 60 minutes
   if (!token.value || Date.now() - token.issued > 45 * 60 * 1000) {
     token = {

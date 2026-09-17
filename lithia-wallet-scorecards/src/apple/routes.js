@@ -3,6 +3,7 @@ import { config } from '../config.js';
 import * as db from '../db.js';
 import { buildPass } from './pass.js';
 import { pushPassUpdate } from './apns.js';
+import { rmoAccess } from '../auth.js';
 
 export const appleRouter = Router();
 
@@ -89,10 +90,9 @@ appleRouter.post('/v1/log', (req, res) => {
 
 // ---- Distribution: one tap add from the RMO's link ----
 
-appleRouter.get('/add/:slug.pkpass', async (req, res, next) => {
+appleRouter.get('/add/:slug.pkpass', rmoAccess({ mode: 'download' }), async (req, res, next) => {
   try {
-    const rmo = await db.getRmoBySlug(req.params.slug);
-    if (!rmo) return res.status(404).send('Scorecard not found');
+    const rmo = req.rmo;
     const buf = await buildPass(await db.getScorecard(rmo));
     await db.logEvent(rmo.id, 'apple', 'pass_downloaded', { ua: req.get('user-agent') });
     res.set({

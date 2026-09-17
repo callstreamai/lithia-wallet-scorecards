@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200" width="200" height="200" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <mask id="mono-sliced-a-m" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <g transform="translate(100 100) skewX(-14) translate(-100 -100)"><path d="M131.98 162L124.95 138.37L74.56 138.37L67.63 162L22.41 162L76.22 18.84L124.46 18.84L178.27 162L131.98 162M84.13 107.41L115.67 107.41L99.85 55.95" fill="#fff"/></g>
+      <rect x="0" y="70" width="200" height="14" fill="#000"/>
+    </mask>
+  </defs>
+  <rect x="0" y="0" width="200" height="200" fill="#E30613" mask="url(#mono-sliced-a-m)"/>
+</svg>
