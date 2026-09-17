@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Scorecard Portal · Alpha Drive AI</title>
+<link rel="icon" href="/assets/sliced-a.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050505;--ink:#0A0A0C;--paper:#fff;--mute:rgba(255,255,255,.62);--dim:rgba(255,255,255,.4);--line:rgba(255,255,255,.08);--card:rgba(255,255,255,.03);--red:#E30613;--deep:#AA0310;--green:#2ecc71;--amber:#f5a623}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--paper);font:14px/1.5 Inter,-apple-system,system-ui,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.mono{font:600 10px/1 "Courier New",ui-monospace,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(5,5,5,.9);backdrop-filter:blur(8px);z-index:5}
+header img{height:16px;display:block}
+header .right{display:flex;gap:14px;align-items:center;color:var(--mute);font-size:13px}
+nav{display:flex;gap:4px;padding:12px 24px 0;border-bottom:1px solid var(--line)}
+nav button{background:none;border:0;color:var(--mute);padding:10px 14px;font:inherit;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav button.on{color:var(--paper);border-color:var(--red)}
+main{max-width:1180px;margin:0 auto;padding:24px}
+h1{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;font-size:30px;letter-spacing:-.03em;margin:0 0 4px}
+h2{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;font-size:20px;letter-spacing:-.02em;margin:0 0 12px}
+.sub{color:var(--mute);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.grid{display:grid;gap:14px}
+.grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.grid.cols-2{grid-template-columns:1fr 1fr}
+@media(max-width:900px){.grid.cols-3,.grid.cols-2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:0 10px 10px 0;border-bottom:1px solid var(--line);font:600 10px/1 "Courier New",ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+td{padding:12px 10px 12px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.row:hover td{background:rgba(255,255,255,.02)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;background:var(--red);color:#fff;border:0;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--deep)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mute)}
+.btn.ghost:hover{color:var(--paper);border-color:rgba(255,255,255,.25);background:transparent}
+.btn.sm{height:30px;padding:0 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:default}
+input,select,textarea{width:100%;height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--paper);padding:0 12px;font:inherit;outline:none}
+input:focus,select:focus{border-color:rgba(255,255,255,.28)}
+select option{background:#111}
+label{display:block;margin:0 0 6px}
+.field{margin-bottom:14px}
+.pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--line);color:var(--mute)}
+.pill.ok{color:var(--green);border-color:rgba(46,204,113,.35)}
+.pill.warn{color:var(--amber);border-color:rgba(245,166,35,.35)}
+.pill.bad{color:var(--red);border-color:rgba(227,6,19,.4)}
+.pill.red{background:var(--red);color:#fff;border-color:var(--red)}
+.big{font-family:"Space Grotesk",Inter,sans-serif;font-size:28px;font-weight:700;letter-spacing:-.03em}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#161618;border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:20;max-width:90vw}
+.toast.err{border-color:rgba(227,6,19,.6)}
+.drop{border:1px dashed rgba(255,255,255,.2);border-radius:16px;padding:32px;text-align:center;color:var(--mute);cursor:pointer}
+.drop.over{border-color:var(--red);color:var(--paper)}
+.muted{color:var(--dim);font-size:12px}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:#0b0b0d;border-left:1px solid var(--line);padding:24px;overflow:auto;z-index:10;box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+.drawer .close{position:absolute;top:14px;right:16px}
+.hide{display:none!important}
+.login{max-width:440px;margin:80px auto}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.kv span:last-child{color:var(--mute)}
+code{font-family:ui-monospace,"Courier New",monospace;font-size:12px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <img src="/assets/wordmark@2x.png" alt="Alpha Drive AI">
+  <div class="right"><span class="mono">Lithia scorecard portal</span><span id="who"></span><button id="signout" class="btn ghost sm hide">Sign out</button></div>
+</header>
+
+<!-- LOGIN -->
+<section id="login" class="login hide">
+  <div class="card">
+    <span class="mono">Team sign in</span>
+    <h1 style="margin-top:10px">Scorecard Portal</h1>
+    <p class="sub">Enter your Alpha Drive AI or Call Stream AI email. We will send a sign-in link; no password.</p>
+    <div class="field"><input id="loginEmail" type="email" placeholder="you@alphadriveai.com" autocomplete="email"></div>
+    <button id="loginBtn" class="btn" style="width:100%;height:44px">Send sign-in link</button>
+    <p id="loginMsg" class="muted" style="margin-top:12px"></p>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app" class="hide">
+<nav>
+  <button data-tab="rmos" class="on">RMOs</button>
+  <button data-tab="upload">Weekly upload</button>
+  <button data-tab="stores">Stores</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+<main>
+
+<section data-panel="rmos">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div><h1>RMOs</h1><p class="sub" style="margin:0" id="rmosSub">Loading…</p></div>
+    <div style="display:flex;gap:8px"><button class="btn ghost" id="pushAll">Push all cards</button><button class="btn" id="addRmo">Add RMO</button></div>
+  </div>
+  <div class="card" style="padding:6px 20px 0"><table id="rmoTable"><thead><tr><th>RMO</th><th>Stores</th><th class="n">Book</th><th class="n">Contain</th><th class="n">Transfer</th><th class="n">Calls</th><th>Devices</th><th></th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section data-panel="upload" class="hide">
+  <h1>Weekly upload</h1>
+  <p class="sub">Drop the Weekly Account Performance Report (.xlsx). Every sheet titled "Week of …" is read; dealers are matched to stores by name. Cards push automatically.</p>
+  <div class="grid cols-2">
+    <div>
+      <div id="drop" class="drop">Drop the Excel file here or click to choose<input id="file" type="file" accept=".xlsx" class="hide"></div>
+      <div id="preview" class="card hide" style="margin-top:14px"></div>
+    </div>
+    <div class="card">
+      <span class="mono">Recent uploads</span>
+      <div id="batches" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<section data-panel="stores" class="hide">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div><h1>Stores</h1><p class="sub" style="margin:0">Assign each dealer to an RMO. Unassigned stores never appear on any card.</p></div>
+    <button class="btn" id="addStore">Add store</button>
+  </div>
+  <div id="unassigned" class="card hide" style="margin-bottom:14px;border-color:rgba(245,166,35,.4)"></div>
+  <div class="card" style="padding:6px 20px 0"><table id="storeTable"><thead><tr><th>Store</th><th>State</th><th>RMO</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section data-panel="settings" class="hide">
+  <h1>Settings</h1>
+  <p class="sub">Targets drive the ✓ and ▲ marks on every card.</p>
+  <div class="grid cols-2">
+    <div class="card">
+      <div class="field"><label class="mono">Book rate target</label><input id="sBook" type="number" step="0.1" min="0" max="100"><p class="muted">Percent. Cards show ✓ at or above this.</p></div>
+      <div class="field"><label class="mono">Transfer rate max</label><input id="sTransfer" type="number" step="0.1" min="0" max="100"><p class="muted">Percent. Cards show ✓ at or below this.</p></div>
+      <div class="field"><label class="mono">Rate rollup</label><select id="sAgg"><option value="simple">Simple average of store rates (matches the Excel report)</option><option value="weighted">Call-weighted</option></select></div>
+      <div class="field"><label class="mono">Organization name on cards</label><input id="sOrg"></div>
+      <button class="btn" id="saveSettings">Save settings</button>
+    </div>
+    <div class="card">
+      <span class="mono">System</span>
+      <div class="kv"><span>Card service</span><span><a href="/health" target="_blank">lithia.rmo.alphadriveai.com</a></span></div>
+      <div class="kv"><span>Apple certificate expires</span><span id="certExp">…</span></div>
+      <div class="kv"><span>Signed in as</span><span id="who2"></span></div>
+      <p class="muted" style="margin-top:14px">Saving settings pushes every card so the marks refresh.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<div id="drawer" class="drawer hide"></div>
+<div id="toast" class="toast hide"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://ropvfkjkpcqiwgqfmzfz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9FXGu37BaH_6x6PILMc_uQ_mB4_lbpD';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const pct = (v, d = 1) => v == null ? '—' : (Number(v) * 100).toFixed(d) + '%';
+const int = (v) => v == null ? '—' : Number(v).toLocaleString('en-US');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT; function toast(msg, err = false) { const t = $('#toast'); t.textContent = msg; t.className = 'toast' + (err ? ' err' : ''); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hide'), 4200); }
+async function api(path, opts = {}) {
+  const { data: { session } } = await sb.auth.getSession();
+  const r = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), Authorization: `Bearer ${session?.access_token || ''}` } });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+// ---------- auth ----------
+const TEAM = /@(alphadriveai|callstreamai)\.com$/i;
+$('#loginBtn').onclick = async () => {
+  const email = $('#loginEmail').value.trim();
+  if (!TEAM.test(email)) return toast('Use your Alpha Drive AI or Call Stream AI email.', true);
+  $('#loginBtn').disabled = true;
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/portal/' } });
+  $('#loginBtn').disabled = false;
+  if (error) return toast(error.message, true);
+  $('#loginMsg').textContent = 'Check your inbox for the sign-in link.';
+};
+$('#signout').onclick = () => sb.auth.signOut();
+sb.auth.onAuthStateChange((_e, session) => render(session));
+const { data: { session: s0 } } = await sb.auth.getSession(); render(s0);
+
+let settings, rmos = [], stores = [], weeks = [], devices = [];
+async function render(session) {
+  const email = session?.user?.email || '';
+  if (!session || !TEAM.test(email)) { $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#signout').classList.add('hide'); if (session) { toast('That account is not on the team list.', true); sb.auth.signOut(); } return; }
+  $('#login').classList.add('hide'); $('#app').classList.remove('hide'); $('#signout').classList.remove('hide');
+  $('#who').textContent = email; $('#who2').textContent = email;
+  await loadAll();
+}
+async function loadAll() {
+  const [a, b, c, d, e] = await Promise.all([
+    sb.from('settings').select('*').eq('id', 1).single(),
+    sb.from('rmos').select('*').order('name'),
+    sb.from('stores').select('*').order('name'),
+    sb.from('v_rmo_weeks').select('*').order('period_start', { ascending: false }),
+    sb.from('v_rmo_devices').select('*'),
+  ]);
+  settings = a.data; rmos = b.data || []; stores = c.data || []; weeks = d.data || []; devices = e.data || [];
+  renderRmos(); renderStores(); renderSettings(); loadBatches();
+  fetch('/health').then(r => r.json()).then(h => { $('#certExp').textContent = h.apple?.certExpires ? new Date(h.apple.certExpires).toLocaleDateString() : '—'; }).catch(() => {});
+}
+
+// ---------- tabs ----------
+$$('nav button').forEach(b => b.onclick = () => { $$('nav button').forEach(x => x.classList.toggle('on', x === b)); $$('[data-panel]').forEach(p => p.classList.toggle('hide', p.dataset.panel !== b.dataset.tab)); });
+
+// ---------- RMOs ----------
+const rate = (row, key) => row ? Number(row[`${key}_${settings?.rate_aggregation === 'weighted' ? 'weighted' : 'simple'}`]) : null;
+function latestWeek(rmoId) { return weeks.find(w => w.rmo_id === rmoId) || null; }
+function renderRmos() {
+  const latest = weeks[0]?.period_start;
+  $('#rmosSub').textContent = latest ? `Latest week starts ${latest} · ${rmos.filter(r => r.active).length} RMOs · ${stores.filter(s => s.status === 'active').length} active stores` : 'No weeks loaded yet';
+  const tb = $('#rmoTable tbody'); tb.innerHTML = '';
+  for (const r of rmos.filter(r => r.active)) {
+    const w = latestWeek(r.id); const dev = devices.find(d => d.rmo_id === r.id)?.devices || 0;
+    const book = rate(w, 'book_rate'), tr = rate(w, 'transfer_rate');
+    const tr_ = document.createElement('tr'); tr_.className = 'row';
+    tr_.innerHTML = `
+      <td><b>${esc(r.name)}</b><br><span class="muted">${esc(r.region_name || '')}${r.email ? ' · ' + esc(r.email) : ' · <span style="color:var(--amber)">no email</span>'}</span></td>
+      <td>${stores.filter(s => s.rmo_id === r.id && s.status !== 'pending').length}</td>
+      <td class="n"><span class="pill ${book == null ? '' : book >= settings.booking_rate_target ? 'ok' : 'bad'}">${pct(book)}</span></td>
+      <td class="n">${pct(rate(w, 'containment_rate'))}</td>
+      <td class="n"><span class="pill ${tr == null ? '' : tr <= settings.transfer_rate_max ? 'ok' : 'bad'}">${pct(tr)}</span></td>
+      <td class="n">${int(w?.calls)}</td>
+      <td>${dev ? `<span class="pill ok">${dev} phone${dev === 1 ? '' : 's'}</span>` : '<span class="pill">none yet</span>'}</td>
+      <td><div class="row-actions">
+        <button class="btn ghost sm" data-act="link">Copy link</button>
+        <button class="btn ghost sm" data-act="push" ${dev ? '' : 'disabled'}>Push</button>
+        <button class="btn ghost sm" data-act="edit">Edit</button>
+      </div></td>`;
+    tr_.querySelector('[data-act=link]').onclick = async () => { try { const j = await api(`/admin/rmos/${r.id}/link`); await navigator.clipboard.writeText(j.url); toast(`Personal link for ${r.name} copied. Text or email it to them.`); } catch (e) { toast(e.message, true); } };
+    tr_.querySelector('[data-act=push]').onclick = async () => { try { const j = await api(`/admin/rmos/${r.id}/push`, { method: 'POST' }); toast(`Pushed to ${j.sent} phone${j.sent === 1 ? '' : 's'}${j.failed ? `, ${j.failed} failed` : ''}`); } catch (e) { toast(e.message, true); } };
+    tr_.querySelector('[data-act=edit]').onclick = () => openRmo(r);
+    tb.appendChild(tr_);
+  }
+}
+$('#pushAll').onclick = async () => { if (!confirm('Push every RMO card now?')) return; try { const j = await api('/admin/push-all', { method: 'POST' }); const n = Object.values(j.results).reduce((a, r) => a + r.sent, 0); toast(`Pushed to ${n} phones`); } catch (e) { toast(e.message, true); } };
+$('#addRmo').onclick = () => openRmo({ name: '', email: '', region_name: '', manager_name: '', manager_email: '', active: true });
+
+function openRmo(r) {
+  const isNew = !r.id;
+  const mine = stores.filter(s => s.rmo_id === r.id);
+  const d = $('#drawer'); d.classList.remove('hide');
+  d.innerHTML = `
+    <button class="btn ghost sm close">Close</button>
+    <span class="mono">${isNew ? 'New RMO' : 'RMO'}</span>
+    <h2 style="margin-top:8px">${isNew ? 'Add RMO' : esc(r.name)}</h2>
+    <div class="grid cols-2">
+      <div class="field"><label class="mono">Name</label><input id="fName" value="${esc(r.name)}"></div>
+      <div class="field"><label class="mono">Email</label><input id="fEmail" type="email" value="${esc(r.email || '')}"></div>
+      <div class="field"><label class="mono">Region label</label><input id="fRegion" value="${esc(r.region_name || '')}" placeholder="e.g. Florida, Georgia"></div>
+      <div class="field"><label class="mono">Senior RMO</label><input id="fMgr" value="${esc(r.manager_name || '')}"></div>
+      <div class="field"><label class="mono">Senior RMO email</label><input id="fMgrEmail" type="email" value="${esc(r.manager_email || '')}"></div>
+      <div class="field"><label class="mono">Status</label><select id="fActive"><option value="true" ${r.active ? 'selected' : ''}>Active</option><option value="false" ${!r.active ? 'selected' : ''}>Inactive (hide card)</option></select></div>
+    </div>
+    <div style="display:flex;gap:8px;margin:4px 0 24px"><button class="btn" id="fSave">${isNew ? 'Create RMO' : 'Save changes'}</button>${isNew ? '' : `<a class="btn ghost" href="/w/${esc(r.slug)}" target="_blank">Open page</a><a class="btn ghost" id="fPass" href="#">Download pass</a>`}</div>
+    ${isNew ? '' : `<span class="mono">Stores (${mine.length})</span>
+    <table style="margin-top:8px"><tbody>${mine.map(s => `<tr><td>${esc(s.name)}<br><span class="muted">${esc(s.state || '')}</span></td><td class="n"><span class="pill ${s.status === 'active' ? 'ok' : s.status === 'canceled' ? 'bad' : 'warn'}">${s.status}</span></td></tr>`).join('') || '<tr><td class="muted">No stores assigned. Use the Stores tab.</td></tr>'}</tbody></table>`}`;
+  d.querySelector('.close').onclick = () => d.classList.add('hide');
+  if (!isNew) d.querySelector('#fPass').onclick = async (e) => { e.preventDefault(); try { const j = await api(`/admin/rmos/${r.id}/link`); const u = new URL(j.url); window.open(`/apple/add/${r.slug}.pkpass?t=${u.searchParams.get('t')}`, '_blank'); } catch (err) { toast(err.message, true); } };
+  d.querySelector('#fSave').onclick = async () => {
+    const row = { name: $('#fName').value.trim(), email: $('#fEmail').value.trim() || null, region_name: $('#fRegion').value.trim() || null, manager_name: $('#fMgr').value.trim() || null, manager_email: $('#fMgrEmail').value.trim() || null, active: $('#fActive').value === 'true' };
+    if (!row.name) return toast('Name is required', true);
+    if (isNew) row.slug = row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const q = isNew ? sb.from('rmos').insert(row) : sb.from('rmos').update(row).eq('id', r.id);
+    const { error } = await q; if (error) return toast(error.message, true);
+    toast(isNew ? 'RMO created' : 'Saved'); d.classList.add('hide'); await loadAll();
+  };
+}
+
+// ---------- Stores ----------
+function renderStores() {
+  const un = stores.filter(s => !s.rmo_id && s.status !== 'canceled');
+  const box = $('#unassigned'); box.classList.toggle('hide', !un.length);
+  if (un.length) box.innerHTML = `<span class="mono" style="color:var(--amber)">Needs an RMO (${un.length})</span><p class="muted" style="margin:6px 0 10px">These dealers appeared in a report but are not mapped to anyone yet.</p>${un.map(s => storeRow(s, true)).join('')}`;
+  const tb = $('#storeTable tbody'); tb.innerHTML = stores.map(s => storeRow(s)).join('');
+  $$('[data-store]').forEach(el => {
+    const s = stores.find(x => x.id === el.dataset.store);
+    el.querySelector('select[data-f=rmo]').onchange = async (e) => { const { error } = await sb.from('stores').update({ rmo_id: e.target.value || null, status: e.target.value && s.status === 'pending' ? 'active' : s.status }).eq('id', s.id); if (error) return toast(error.message, true); toast(`${s.name} assigned`); await loadAll(); };
+    el.querySelector('select[data-f=status]').onchange = async (e) => { const { error } = await sb.from('stores').update({ status: e.target.value }).eq('id', s.id); if (error) return toast(error.message, true); toast('Status updated'); await loadAll(); };
+    const ren = el.querySelector('[data-act=rename]'); if (ren) ren.onclick = async () => { const name = prompt('Store name', s.name); if (!name || name === s.name) return; const { error } = await sb.from('stores').update({ name }).eq('id', s.id); if (error) return toast(error.message, true); await loadAll(); };
+  });
+}
+function storeRow(s, compact = false) {
+  const opts = `<option value="">— Unassigned —</option>` + rmos.filter(r => r.active).map(r => `<option value="${r.id}" ${r.id === s.rmo_id ? 'selected' : ''}>${esc(r.name)}</option>`).join('');
+  const status = `<select data-f="status" style="height:32px;width:auto"><option value="active" ${s.status === 'active' ? 'selected' : ''}>Active</option><option value="canceled" ${s.status === 'canceled' ? 'selected' : ''}>Canceled</option><option value="pending" ${s.status === 'pending' ? 'selected' : ''}>Pending</option></select>`;
+  if (compact) return `<div data-store="${s.id}" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)"><b style="flex:1">${esc(s.name)}</b><select data-f="rmo" style="height:32px;width:220px">${opts}</select><span class="hide">${status}</span></div>`;
+  return `<tr data-store="${s.id}" class="row"><td><b>${esc(s.name)}</b>${s.aliases?.length ? `<br><span class="muted">also: ${esc(s.aliases.join(', '))}</span>` : ''}</td><td>${esc(s.state || '')}</td><td><select data-f="rmo" style="height:32px;width:200px">${opts}</select></td><td>${status}</td><td class="n"><button class="btn ghost sm" data-act="rename">Rename</button></td></tr>`;
+}
+$('#addStore').onclick = async () => {
+  const name = prompt('Dealer name exactly as it appears in the weekly report'); if (!name) return;
+  const state = prompt('State (optional)') || null;
+  const { error } = await sb.from('stores').insert({ name: name.trim(), state, status: 'pending' }); if (error) return toast(error.message, true);
+  toast('Store added. Assign it to an RMO below.'); await loadAll();
+};
+
+// ---------- Upload ----------
+const drop = $('#drop'), file = $('#file');
+drop.onclick = () => file.click();
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) preview(e.dataTransfer.files[0]); };
+file.onchange = () => file.files[0] && preview(file.files[0]);
+async function preview(f) {
+  const box = $('#preview'); box.classList.remove('hide'); box.innerHTML = `<span class="mono">Reading ${esc(f.name)}…</span>`;
+  try {
+    const p = await api('/admin/import/preview', { method: 'POST', body: f, headers: { 'Content-Type': 'application/octet-stream' } });
+    if (!p.weeks.length) { box.innerHTML = `<span class="pill bad">No "Week of …" sheets found</span>`; return; }
+    box.innerHTML = `<span class="mono">Found in workbook</span>
+      <table style="margin:10px 0 14px"><tbody>${p.weeks.map((w, i) => `<tr><td>${w.start} → ${w.end}${i === 0 ? ' <span class="pill red">latest</span>' : ''}</td><td class="n">${w.dealers} dealers</td></tr>`).join('')}</tbody></table>
+      <p class="muted">${p.hasMapping ? 'RMO mapping sheet detected: new dealers will be auto-assigned.' : 'No "by RMO" sheet: new dealers will land in the Unassigned queue.'}</p>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="impLatest">Import latest week</button><button class="btn ghost" id="impAll">Import all ${p.weeks.length} weeks</button></div>`;
+    const run = async (mode) => {
+      box.querySelectorAll('button').forEach(b => b.disabled = true);
+      try {
+        const r = await api(`/admin/import?weeks=${mode}`, { method: 'POST', body: f, headers: { 'Content-Type': 'application/octet-stream', 'x-filename': f.name } });
+        box.innerHTML = `<span class="pill ok">Imported</span> <b>${r.weeks.reduce((a, w) => a + w.rows, 0)} rows</b> across ${r.weeks.length} week${r.weeks.length === 1 ? '' : 's'} · ${r.rmoIds.length} RMO cards pushing now.
+          ${r.createdStores.length ? `<p class="muted" style="margin-top:8px">New stores created: ${esc(r.createdStores.join(', '))}</p>` : ''}
+          ${r.unmatched.length ? `<p style="margin-top:8px;color:var(--amber)">Needs an RMO: ${esc(r.unmatched.join(', '))} — see the Stores tab.</p>` : ''}`;
+        await loadAll();
+      } catch (e) { toast(e.message, true); box.querySelectorAll('button').forEach(b => b.disabled = false); }
+    };
+    $('#impLatest').onclick = () => run('latest'); $('#impAll').onclick = () => run('all');
+  } catch (e) { box.innerHTML = `<span class="pill bad">${esc(e.message)}</span>`; }
+}
+async function loadBatches() {
+  const { data } = await sb.from('import_batches').select('*').order('created_at', { ascending: false }).limit(8);
+  $('#batches').innerHTML = (data || []).map(b => `<div class="kv"><span>${b.period_start} → ${b.period_end}<br><span class="muted">${esc(b.filename || 'seed')} · ${esc(b.created_by || '')}</span></span><span>${b.rows_imported} rows${b.unmatched?.length ? ` · <span style="color:var(--amber)">${b.unmatched.length} unmatched</span>` : ''}</span></div>`).join('') || '<p class="muted">No uploads yet.</p>';
+}
+
+// ---------- Settings ----------
+function renderSettings() {
+  if (!settings) return;
+  $('#sBook').value = (settings.booking_rate_target * 100).toFixed(1);
+  $('#sTransfer').value = (settings.transfer_rate_max * 100).toFixed(1);
+  $('#sAgg').value = settings.rate_aggregation; $('#sOrg').value = settings.organization_name;
+}
+$('#saveSettings').onclick = async () => {
+  const row = { booking_rate_target: Number($('#sBook').value) / 100, transfer_rate_max: Number($('#sTransfer').value) / 100, rate_aggregation: $('#sAgg').value, organization_name: $('#sOrg').value.trim() || 'Alpha Drive AI', updated_at: new Date().toISOString() };
+  const { error } = await sb.from('settings').update(row).eq('id', 1); if (error) return toast(error.message, true);
+  toast('Settings saved, pushing cards…'); await loadAll();
+  api('/admin/push-all', { method: 'POST' }).catch(e => toast(e.message, true));
+};
+</script>
+</body>
+</html>

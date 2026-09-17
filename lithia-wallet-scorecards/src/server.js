@@ -24,9 +24,22 @@ app.use('/admin', (req, res, next) => {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   });
   if (req.method === 'OPTIONS') return res.sendStatus(204);
-  if (!config.adminApiKey || req.get('x-admin-key') !== config.adminApiKey) return res.sendStatus(401);
-  next();
+  if (config.adminApiKey && req.get('x-admin-key') === config.adminApiKey) return next();
+  // Portal users: Supabase Auth session token, restricted to team email domains
+  const bearer = (req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (bearer) {
+    db.supabase.auth.getUser(bearer).then(({ data, error }) => {
+      const email = (data?.user?.email || '').toLowerCase();
+      if (!error && /@(alphadriveai|callstreamai)\.com$/.test(email)) { req.user = email; return next(); }
+      res.sendStatus(401);
+    }).catch(() => res.sendStatus(401));
+    return;
+  }
+  res.sendStatus(401);
 });
+
+// ---- Team portal (static single-page app) ----
+app.use('/portal', express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../portal'), { index: 'index.html' }));
 
 // ---- Health ----
 app.get('/health', async (_req, res) => {
@@ -99,7 +112,7 @@ app.post('/admin/import', express.raw({ type: () => true, limit: '25mb' }), asyn
     const result = await applyReport(parsed, {
       weeks: req.query.weeks === 'all' ? 'all' : 'latest',
       filename: req.get('x-filename') || null,
-      createdBy: req.get('x-user') || 'portal',
+      createdBy: req.user || req.get('x-user') || 'portal',
     });
     for (const id of result.rmoIds) {
       const rmo = await db.getRmoById(id);
