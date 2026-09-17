@@ -99,6 +99,7 @@ export function landingPage({ rmo, settings, week, prevWeek, month, stores, stor
   <div class="actions">
     <a id="apple" class="btn" href="${appleHref}">Add to Apple Wallet</a>
     ${googleHref ? `<a id="google" class="btn" href="${googleHref}">Add to Google Wallet</a>` : `<a id="google" class="btn ghost soon" href="#">Google Wallet coming soon</a>`}
+    <a class="btn ghost" href="${config.publicBaseUrl}/w/${encodeURIComponent(rmo.slug)}/pdf">Download PDF</a>
   </div>
 
   ${stores.length ? `<table>

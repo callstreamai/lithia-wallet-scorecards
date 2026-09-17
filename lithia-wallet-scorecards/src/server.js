@@ -5,6 +5,7 @@ import { appleRouter, pushRmo } from './apple/routes.js';
 import { describeCertificate } from './apple/certs.js';
 import { landingPage, lockedPage } from './landing.js';
 import { rmoAccess, handleAccessRequest, magicLink } from './auth.js';
+import { buildPdf } from './pdf.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseReport } from './import-report.js';
@@ -22,6 +23,7 @@ app.use('/admin', (req, res, next) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'content-type, x-admin-key, x-filename, x-user',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Expose-Headers': 'content-disposition',
   });
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   if (config.adminApiKey && req.get('x-admin-key') === config.adminApiKey) return next();
@@ -64,6 +66,17 @@ app.get('/w/:slug', rmoAccess({ mode: 'page' }), async (req, res, next) => {
   try {
     if (res.locals.locked) return res.status(200).type('html').send(lockedPage(req.rmo, { sent: req.query.sent === '1' }));
     res.type('html').send(landingPage(await db.getScorecard(req.rmo, req.query.week)));
+  } catch (e) { next(e); }
+});
+
+// RMO-facing PDF of the current scorecard (same access as the page)
+app.get('/w/:slug/pdf', rmoAccess({ mode: 'download' }), async (req, res, next) => {
+  try {
+    const sc = await db.getScorecard(req.rmo, req.query.week);
+    const buf = await buildPdf(sc, { walletLink: magicLink(req.rmo) });
+    await db.logEvent(req.rmo.id, 'pdf', 'downloaded', { by: 'rmo' });
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="Alpha-Drive-Scorecard-${req.rmo.slug}${sc.week ? '-' + sc.week.period_end : ''}.pdf"` });
+    res.send(buf);
   } catch (e) { next(e); }
 });
 
@@ -139,6 +152,19 @@ app.get('/admin/rmos/:id/link', async (req, res, next) => {
     const rmo = await db.getRmoById(req.params.id);
     if (!rmo) return res.sendStatus(404);
     res.json({ ok: true, url: magicLink(rmo) });
+  } catch (e) { next(e); }
+});
+
+// Portal: PDF for one RMO (team sends it by email)
+app.get('/admin/rmos/:id/pdf', async (req, res, next) => {
+  try {
+    const rmo = await db.getRmoById(req.params.id);
+    if (!rmo) return res.sendStatus(404);
+    const sc = await db.getScorecard(rmo, req.query.week);
+    const buf = await buildPdf(sc, { walletLink: magicLink(rmo) });
+    await db.logEvent(rmo.id, 'pdf', 'downloaded', { by: req.user || 'admin' });
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="Alpha-Drive-Scorecard-${rmo.slug}${sc.week ? '-' + sc.week.period_end : ''}.pdf"` });
+    res.send(buf);
   } catch (e) { next(e); }
 });
 

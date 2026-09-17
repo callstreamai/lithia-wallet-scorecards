@@ -232,11 +232,13 @@ function renderRmos() {
       <td>${dev ? `<span class="pill ok">${dev} phone${dev === 1 ? '' : 's'}</span>` : '<span class="pill">none yet</span>'}</td>
       <td><div class="row-actions">
         <button class="btn ghost sm" data-act="link">Copy link</button>
+        <button class="btn ghost sm" data-act="pdf">PDF</button>
         <button class="btn ghost sm" data-act="push" ${dev ? '' : 'disabled'}>Push</button>
         <button class="btn ghost sm" data-act="edit">Edit</button>
       </div></td>`;
     tr_.querySelector('[data-act=link]').onclick = async () => { try { const j = await api(`/admin/rmos/${r.id}/link`); await navigator.clipboard.writeText(j.url); toast(`Personal link for ${r.name} copied. Text or email it to them.`); } catch (e) { toast(e.message, true); } };
     tr_.querySelector('[data-act=push]').onclick = async () => { try { const j = await api(`/admin/rmos/${r.id}/push`, { method: 'POST' }); toast(`Pushed to ${j.sent} phone${j.sent === 1 ? '' : 's'}${j.failed ? `, ${j.failed} failed` : ''}`); } catch (e) { toast(e.message, true); } };
+    tr_.querySelector('[data-act=pdf]').onclick = async (e) => { e.target.disabled = true; try { const { data: { session } } = await sb.auth.getSession(); const resp = await fetch(`/admin/rmos/${r.id}/pdf`, { headers: { Authorization: `Bearer ${session.access_token}` } }); if (!resp.ok) throw new Error('PDF failed'); const blob = await resp.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (resp.headers.get('content-disposition') || '').match(/filename="([^"]+)"/)?.[1] || `${r.slug}.pdf`; a.click(); } catch (err) { toast(err.message, true); } e.target.disabled = false; };
     tr_.querySelector('[data-act=edit]').onclick = () => openRmo(r);
     tb.appendChild(tr_);
   }
