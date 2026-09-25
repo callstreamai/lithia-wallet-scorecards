@@ -48,13 +48,16 @@ export async function listActiveRmos() {
 export async function getScorecard(rmo, periodStart) {
   const settings = await getSettings();
 
+  // All weeks this RMO has data for (newest first), for the week switcher
+  const { data: allWeeks } = await supabase.from('v_rmo_weeks').select('period_start, period_end').eq('rmo_id', rmo.id).order('period_start', { ascending: false });
+
   let weeksQ = supabase.from('v_rmo_weeks').select('*').eq('rmo_id', rmo.id).order('period_start', { ascending: false }).limit(2);
   if (periodStart) weeksQ = weeksQ.lte('period_start', periodStart);
   const { data: weeks, error: eW } = await weeksQ;
   if (eW) throw eW;
   const week = weeks?.[0] || null;
   const prevWeek = weeks?.[1] || null;
-  if (!week) return { rmo, settings, week: null, prevWeek: null, month: null, stores: [], storeMonths: [] };
+  if (!week) return { rmo, settings, week: null, prevWeek: null, month: null, stores: [], storeMonths: [], allWeeks: allWeeks || [] };
 
   const monthKey = week.period_start.slice(0, 7) + '-01';
   const [monthRes, storesRes, storeMonthsRes] = await Promise.all([
@@ -69,6 +72,7 @@ export async function getScorecard(rmo, periodStart) {
     month: monthRes.data,
     stores: storesRes.data || [],
     storeMonths: storeMonthsRes.data || [],
+    allWeeks: allWeeks || [],
   };
 }
 
