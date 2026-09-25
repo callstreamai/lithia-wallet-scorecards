@@ -1,5 +1,5 @@
 import { config } from './config.js';
-import { pct, int, weekLabelLong, monthLabel, rateOf, kpiStatus, delta } from './format.js';
+import { pct, int, weekLabel, weekLabelLong, monthLabel, rateOf, kpiStatus, delta } from './format.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -13,6 +13,8 @@ const SHELL_CSS = `
   main{max-width:600px;margin:0 auto;padding:28px 20px 64px}
   .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:22px;border-bottom:1px solid var(--line)}
   .top img{height:18px;display:block}
+  select.weeks{height:32px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--paper);padding:0 32px 0 12px;font:inherit;font-size:13px;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+  select.weeks option{background:#111}
   .eyebrow{font:500 11px/1 "Courier New",ui-monospace,monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
   .eyebrow .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:8px;vertical-align:middle;box-shadow:0 0 12px var(--red)}
   .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 14px}
@@ -67,7 +69,7 @@ const head = (title) => `<!doctype html><html lang="en"><head>
 const foot = `</main></body></html>`;
 
 /** Scorecard page (after the personal link has been opened once). */
-export function landingPage({ rmo, settings, week, prevWeek, month, stores, storeMonths }) {
+export function landingPage({ rmo, settings, week, prevWeek, month, stores, storeMonths, allWeeks = [] }) {
   const status = kpiStatus(week, settings);
   const appleHref = `${config.publicBaseUrl}/apple/add/${encodeURIComponent(rmo.slug)}.pkpass`;
   const googleHref = rmo.google_object_id ? `${config.publicBaseUrl}/google/add/${encodeURIComponent(rmo.slug)}` : null;
@@ -78,7 +80,12 @@ export function landingPage({ rmo, settings, week, prevWeek, month, stores, stor
 
   return head(`${rmo.name} · Lithia scorecard · Alpha Drive AI`) + `
   <h1>${esc(rmo.name)}</h1>
-  <p class="sub">${esc(rmo.region_name || '')}${week ? ` · ${esc(weekLabelLong(week.period_start, week.period_end))}` : ''} · ${stores.length} store${stores.length === 1 ? '' : 's'}</p>
+  <p class="sub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span>${esc(rmo.region_name || '')} · ${stores.length} store${stores.length === 1 ? '' : 's'}</span>
+    ${allWeeks.length > 1 ? `<select class="weeks" onchange="location.href='?week='+this.value" aria-label="Choose week">
+      ${allWeeks.map((w, i) => `<option value="${w.period_start}" ${week && w.period_start === week.period_start ? 'selected' : ''}>Week of ${esc(weekLabel(w.period_start, w.period_end))}${i === 0 ? ' · latest' : ''}</option>`).join('')}
+    </select>` : week ? `<span>· ${esc(weekLabelLong(week.period_start, week.period_end))}</span>` : ''}
+  </p>
 
   ${week ? `
   <section class="card hero">
@@ -99,7 +106,7 @@ export function landingPage({ rmo, settings, week, prevWeek, month, stores, stor
   <div class="actions">
     <a id="apple" class="btn" href="${appleHref}">Add to Apple Wallet</a>
     ${googleHref ? `<a id="google" class="btn" href="${googleHref}">Add to Google Wallet</a>` : `<a id="google" class="btn ghost soon" href="#">Google Wallet coming soon</a>`}
-    <a class="btn ghost" href="${config.publicBaseUrl}/w/${encodeURIComponent(rmo.slug)}/pdf">Download PDF</a>
+    <a class="btn ghost" href="${config.publicBaseUrl}/w/${encodeURIComponent(rmo.slug)}/pdf${week ? `?week=${week.period_start}` : ''}">Download PDF</a>
   </div>
 
   ${stores.length ? `<table>
