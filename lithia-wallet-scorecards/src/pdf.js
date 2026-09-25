@@ -45,7 +45,7 @@ export function buildPdf(scorecard, opts = {}) {
   const wow = delta(book, rateOf(prevWeek, 'book_rate', settings));
   doc.rect(L, y, W, 96).fillColor(SMOKE).fill();
   doc.rect(L, y, 4, 96).fillColor(RED).fill();
-  doc.font('Courier-Bold').fontSize(7).fillColor(MUTE).text('BOOK RATE · APPOINTMENTS ON ALL CALLS', L + 20, y + 16, { characterSpacing: 1.4 });
+  doc.font('Courier-Bold').fontSize(7).fillColor(MUTE).text('BOOK RATE · APPOINTMENTS ÷ CUSTOMERS SERVED', L + 20, y + 16, { characterSpacing: 1.4 });
   doc.font('Helvetica-Bold').fontSize(44).fillColor(status.book === 'watch' ? RED : INK).text(pct(book), L + 20, y + 30);
   doc.font('Helvetica').fontSize(9).fillColor(MUTE).text(`Target above ${pct(settings.booking_rate_target, 0)}${wow ? `   ·   ${wow} vs prior week` : ''}`, L + 20, y + 78);
   // right side: status word
@@ -117,7 +117,7 @@ export function buildPdf(scorecard, opts = {}) {
   const fy = doc.page.height - 92;
   doc.moveTo(L, fy).lineTo(L + W, fy).lineWidth(0.5).strokeColor(LINE).stroke();
   doc.font('Helvetica').fontSize(7.5).fillColor(MUTE).text(
-    `Book rate = appointments ÷ total calls. Containment = calls resolved by AI without a transfer. Rates roll up as ${settings.rate_aggregation === 'weighted' ? 'call-weighted averages' : 'simple averages of store rates'}.\n` +
+    `Book rate = appointments ÷ customers served. Containment = calls resolved by AI without a transfer. Rates roll up as ${settings.rate_aggregation === 'weighted' ? 'call-weighted averages' : 'simple averages of store rates'}.\n` +
     `Generated ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' })} ET  ·  ${settings.organization_name} client support 239-221-5236  ·  alphadriveai.com`,
     L, fy + 10, { width: W - (opts.walletLink ? 80 : 0), lineGap: 2 });
 

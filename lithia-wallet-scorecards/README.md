@@ -11,7 +11,7 @@ Live Apple Wallet (and later Google Wallet + PDF) scorecards for Lithia Regional
 
 The card shows the latest week on the front (book rate with WoW change, containment, transfer, calls, customers, MTD book rate) and month-to-date plus a per-store breakdown on the back.
 
-Rates: book rate = appointments / calls and transfer rate = transfers / calls are derived from counts; containment comes from the report. RMO rollups are available both as simple averages of store rates (matches the Excel subtotals) and call-weighted; `settings.rate_aggregation` picks which the cards display.
+Rates: book rate = appointments / customers served and transfer rate = transfers / calls are derived from counts; containment comes from the report. RMO rollups are available both as simple averages of store rates (matches the Excel subtotals) and call-weighted; `settings.rate_aggregation` picks which the cards display.
 
 ## Endpoints
 

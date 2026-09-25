@@ -31,7 +31,7 @@ function* dealerRows(rows) {
     yield {
       dealer: label, customers: num(row[1]), calls: num(row[2]), call_time_hours: hours(row[3]),
       transfers: num(row[5]), status_calls: num(row[6]), appointments: num(row[7]), reschedules: num(row[8]),
-      containment_rate: rate(row[9]), book_rate_prior: rate(row[11]), flag: flag ? String(flag).trim() : null,
+      containment_rate: rate(row[9]), book_rate_reported: rate(row[10]), book_rate_prior: rate(row[11]), flag: flag ? String(flag).trim() : null,
     };
   }
 }

@@ -122,7 +122,7 @@ export async function buildPass(scorecard) {
   if (!stores.length) pass.backFields.add({ key: 'nostores', label: 'STORES', value: 'No store data yet.' });
 
   pass.backFields.add({ key: 'about', label: 'ABOUT THIS CARD', value:
-    `Weekly performance of your stores handled by Alpha Drive AI. Book rate = appointments ÷ total calls. ` +
+    `Weekly performance of your stores handled by Alpha Drive AI. Book rate = appointments ÷ customers served. ` +
     `Containment = calls resolved by AI without a transfer. ✓ on target · ▲ needs attention. ` +
     `Updates automatically when the weekly report is posted.` });
   pass.backFields.add({ key: 'targets', label: 'TARGETS', value:

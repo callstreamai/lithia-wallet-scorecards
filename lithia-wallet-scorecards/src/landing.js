@@ -89,7 +89,7 @@ export function landingPage({ rmo, settings, week, prevWeek, month, stores, stor
 
   ${week ? `
   <section class="card hero">
-    <div class="label">Book rate · appointments on all calls</div>
+    <div class="label">Book rate · appointments ÷ customers served</div>
     <div class="big${status.book === 'watch' ? ' warn' : ''}">${esc(pct(book))}</div>
     <div class="note">Target above <b>${esc(pct(settings.booking_rate_target, 0))}</b>${wow ? ` · <b>${esc(wow)}</b> vs prior week` : ''}</div>
   </section>
@@ -115,7 +115,7 @@ export function landingPage({ rmo, settings, week, prevWeek, month, stores, stor
       <td>${esc(s.store_name)}<span class="muted">${esc(s.state || '')}${s.status === 'canceled' ? ' · Canceled' : ''}</span></td>
       <td class="n${low ? ' warn' : ''}">${esc(pct(s.book_rate))}</td><td class="n">${esc(pct(s.containment_rate, 0))}</td><td class="n">${esc(pct(s.transfer_rate, 0))}</td><td class="n">${esc(int(s.calls))}</td><td class="n">${m ? esc(pct(m.book_rate)) : '—'}</td></tr>`; }).join('')}</tbody></table>` : ''}
 
-  <p class="foot"><span class="noprint">Once added, the card updates itself when the weekly report is posted. </span>Book rate = appointments ÷ total calls. Containment = calls resolved by AI without a transfer. Alpha Drive AI client support <a href="tel:2392215236">239-221-5236</a>.</p>
+  <p class="foot"><span class="noprint">Once added, the card updates itself when the weekly report is posted. </span>Book rate = appointments ÷ customers served. Containment = calls resolved by AI without a transfer. Alpha Drive AI client support <a href="tel:2392215236">239-221-5236</a>.</p>
   <script>var ua=navigator.userAgent;if(/iPhone|iPad|iPod/.test(ua))document.getElementById('google').classList.add('hide');if(/Android/.test(ua))document.getElementById('apple').classList.add('hide');</script>
   ` + foot;
 }

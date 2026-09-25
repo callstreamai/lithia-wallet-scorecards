@@ -72,7 +72,7 @@ export async function applyReport(parsed, opts = {}) {
         store_id: store.id, period_start: week.start, period_end: week.end,
         customers: r.customers, calls: r.calls, call_time_hours: r.call_time_hours,
         transfers: r.transfers, status_calls: r.status_calls, appointments: r.appointments, reschedules: r.reschedules,
-        containment_rate: r.containment_rate, book_rate_prior: r.book_rate_prior,
+        containment_rate: r.containment_rate, book_rate_reported: r.book_rate_reported ?? null, book_rate_prior: r.book_rate_prior,
         source: 'import', updated_by: opts.createdBy || 'import', updated_at: new Date().toISOString(),
       });
     }
